@@ -1,0 +1,9 @@
+{
+  "testEnvironment": "node",
+  "testMatch": ["**/tests/**/*.test.js"],
+  "testPathIgnorePatterns": ["/node_modules/"],
+  "forceExit": true,
+  "testEnvironmentOptions": {
+    "NODE_ENV": "test"
+  }
+}

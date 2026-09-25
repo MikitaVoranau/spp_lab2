@@ -8,7 +8,7 @@ RUN npm install --production
 
 COPY . .
 
-RUN mkdir -p src/uploads
+RUN mkdir -p src/uploads logs
 
 EXPOSE 3000
 
