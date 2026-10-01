@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../logger');
+const { getUserRole } = require('../redis');
 
 function generateAccessToken(user) {
   return jwt.sign(
@@ -17,7 +18,7 @@ function generateRefreshToken(user) {
   );
 }
 
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -27,7 +28,11 @@ function authenticateToken(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload;
+    const currentRole = await getUserRole(payload.id);
+    req.user = {
+      ...payload,
+      role: currentRole || payload.role || 'viewer',
+    };
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
@@ -39,14 +44,18 @@ function authenticateToken(req, res, next) {
 }
 
 function requireRole(...roles) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'Не аутентифицирован' });
     }
-    if (!roles.includes(req.user.role)) {
+    const currentRole = await getUserRole(req.user.id);
+    const userRole = currentRole || req.user.role;
+    req.user.role = userRole;
+
+    if (!roles.includes(userRole)) {
       logger.warn('Forbidden access attempt', {
         userId: req.user.id,
-        userRole: req.user.role,
+        userRole,
         requiredRoles: roles,
         path: req.path,
       });

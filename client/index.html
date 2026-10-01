@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,11 +8,22 @@
   <title>Каталог товаров</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-  <div id="login-screen" class="overlay login-screen">
+  <div id="login-screen" class="overlay login-screen hidden">
     <div class="modal modal-small">
-      <h2>Вход в систему</h2>
+      <div class="modal-header">
+        <h2 id="login-modal-title">Авторизация</h2>
+        <button type="button" id="btn-close-login" class="btn-close">✕</button>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" id="tab-login" class="tab-btn active">Вход</button>
+        <button type="button" id="tab-register" class="tab-btn">Регистрация</button>
+        <button type="button" id="tab-reset" class="tab-btn">Сброс пароля</button>
+      </div>
+
       <form id="login-form" novalidate>
         <label for="login-email">Email</label>
         <input type="email" id="login-email" placeholder="admin@example.com" required />
@@ -19,28 +31,92 @@
         <label for="login-password">Пароль</label>
         <input type="password" id="login-password" placeholder="Пароль" required />
 
+        <div style="display:flex;justify-content:flex-end;margin-top:-6px;margin-bottom:12px;">
+          <button type="button" id="link-forgot-password" class="btn-link">Забыли пароль?</button>
+        </div>
+
         <div id="login-error" class="errors hidden"></div>
 
         <div class="form-buttons">
           <button type="submit" class="btn btn-primary" style="width:100%">Войти</button>
         </div>
       </form>
+
+      <form id="register-form" class="hidden" novalidate>
+        <label for="register-email">Email</label>
+        <input type="email" id="register-email" placeholder="user@example.com" required />
+
+        <label for="register-password">Пароль (мин. 8 символов)</label>
+        <input type="password" id="register-password" placeholder="Придумайте пароль" minlength="8" required />
+
+        <div id="register-error" class="errors hidden"></div>
+
+        <div class="form-buttons">
+          <button type="submit" class="btn btn-primary" style="width:100%">Зарегистрироваться</button>
+        </div>
+      </form>
+
+      <form id="forgot-form" class="hidden" novalidate>
+        <p style="font-size:0.875rem;color:#6b7280;margin-bottom:12px;">
+          Введите ваш email. Если аккаунт существует, вам будет сформирован токен для сброса пароля:
+        </p>
+        <label for="forgot-email">Email</label>
+        <input type="email" id="forgot-email" placeholder="user@example.com" required />
+
+        <div id="forgot-error" class="errors hidden"></div>
+        <div id="forgot-info" class="notification notif-success hidden" style="margin-bottom:12px;font-size:0.85rem;"></div>
+
+        <div class="form-buttons">
+          <button type="submit" class="btn btn-primary" style="width:100%">Запросить сброс пароля</button>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:14px;">
+          <button type="button" id="btn-show-enter-token" class="btn-link">У меня уже есть токен</button>
+          <button type="button" id="btn-forgot-to-login" class="btn-link">Назад ко входу</button>
+        </div>
+      </form>
+
+      <form id="reset-password-form" class="hidden" novalidate>
+        <p style="font-size:0.875rem;color:#6b7280;margin-bottom:12px;">
+          Введите токен сброса и укажите новый пароль (не менее 8 символов):
+        </p>
+        <label for="reset-token-input">Токен сброса</label>
+        <input type="text" id="reset-token-input" placeholder="Вставьте токен" required />
+
+        <label for="reset-new-password">Новый пароль</label>
+        <input type="password" id="reset-new-password" placeholder="Новый пароль" minlength="8" required />
+
+        <div id="reset-error" class="errors hidden"></div>
+        <div id="reset-info" class="notification notif-success hidden" style="margin-bottom:12px;font-size:0.85rem;"></div>
+
+        <div class="form-buttons">
+          <button type="submit" class="btn btn-primary" style="width:100%">Сохранить новый пароль</button>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:14px;">
+          <button type="button" id="btn-back-to-forgot" class="btn-link">Запросить токен снова</button>
+          <button type="button" id="btn-reset-to-login" class="btn-link">Назад ко входу</button>
+        </div>
+      </form>
+
       <p class="login-hint">
-        Admin: admin@example.com / Admin1234!<br/>
-        Manager: manager@example.com / Manager123!<br/>
+        Admin: admin@example.com / Admin1234!<br />
+        Manager: manager@example.com / Manager123!<br />
         Viewer: viewer@example.com / Viewer1234!
       </p>
     </div>
   </div>
 
-  <div id="main-app" class="hidden">
+  <div id="main-app">
 
     <header>
       <h1>Каталог товаров</h1>
       <div class="header-right">
-        <span id="user-info" class="user-info"></span>
-        <button id="btn-open-create" class="btn btn-primary">+ Добавить</button>
-        <button id="btn-logout" class="btn">Выйти</button>
+        <span id="user-info" class="user-info">Гость (не авторизован)</span>
+        <button id="btn-manage-users" class="btn hidden">Управление пользователями</button>
+        <button id="btn-open-create" class="btn btn-primary hidden">+ Добавить</button>
+        <button id="btn-open-login" class="btn btn-primary">Войти</button>
+        <button id="btn-logout" class="btn hidden">Выйти</button>
       </div>
     </header>
 
@@ -54,23 +130,23 @@
         </div>
 
         <form id="product-form" enctype="multipart/form-data" novalidate>
-          <input type="hidden" id="product-id" />
+          <input type="hidden" id="product-id" name="id" />
 
           <label for="field-name">Название *</label>
-          <input type="text" id="field-name" placeholder="Название продукта" maxlength="255" />
+          <input type="text" id="field-name" name="name" placeholder="Название продукта" maxlength="255" />
 
           <label for="field-price">Цена (₽) *</label>
-          <input type="number" id="field-price" placeholder="0.00" min="0" step="0.01" />
+          <input type="number" id="field-price" name="price" placeholder="0.00" min="0" step="0.01" />
 
           <label for="field-category">Категория</label>
-          <input type="text" id="field-category" placeholder="Категория" maxlength="100" />
+          <input type="text" id="field-category" name="category" placeholder="Категория" maxlength="100" />
 
           <label for="field-description">Описание</label>
-          <textarea id="field-description" placeholder="Описание продукта..." rows="3"></textarea>
+          <textarea id="field-description" name="description" placeholder="Описание продукта..." rows="3"></textarea>
 
           <label>Изображение</label>
           <div id="upload-area">
-            <input type="file" id="field-image" accept="image/jpeg,image/png,image/gif,image/webp" />
+            <input type="file" id="field-image" name="image" accept="image/jpeg,image/png,image/gif,image/webp" />
             <img id="image-preview" class="preview hidden" alt="Preview" />
           </div>
 
@@ -83,6 +159,28 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div id="users-modal-overlay" class="overlay hidden">
+      <div class="modal modal-large">
+        <div class="modal-header">
+          <h2>Управление пользователями и ролями (Redis)</h2>
+          <button id="btn-close-users-modal" class="btn-close">✕</button>
+        </div>
+        <div id="users-loading" class="loading">Загрузка пользователей...</div>
+        <table id="users-table" class="hidden">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Текущая роль</th>
+              <th>Назначить роль в Redis</th>
+              <th>Действие</th>
+            </tr>
+          </thead>
+          <tbody id="users-body"></tbody>
+        </table>
       </div>
     </div>
 
@@ -126,6 +224,7 @@
 
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
+
 </html>

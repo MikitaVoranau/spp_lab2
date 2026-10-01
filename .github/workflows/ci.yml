@@ -11,6 +11,17 @@ jobs:
     name: Lint & Test (Node.js)
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     defaults:
       run:
         working-directory: server
@@ -38,6 +49,8 @@ jobs:
           JWT_SECRET: test_secret_key_for_github_actions_32ch
           JWT_ACCESS_EXPIRES: 15m
           JWT_REFRESH_EXPIRES: 7d
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: test_db

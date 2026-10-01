@@ -4,6 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 const { initDB } = require('./db');
+const { initRedisRoles } = require('./redis');
 const logger = require('./logger');
 const { requestLogger, errorHandler } = require('./middleware/httpLogger');
 const productsRouter = require('./routes/products');
@@ -36,6 +37,7 @@ if (process.env.NODE_ENV !== 'test') {
   (async () => {
     try {
       await initDB();
+      await initRedisRoles();
       app.listen(PORT, () => {
         logger.info(`Server started on port ${PORT}`);
       });

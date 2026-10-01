@@ -6,15 +6,55 @@ const {
   generateAccessToken,
   generateRefreshToken,
   authenticateToken,
+  requireRole,
 } = require('../middleware/auth');
 const { loginRateLimiter, checkBruteForce, recordLoginAttempt } = require('../middleware/bruteForce');
 const { sendPasswordResetEmail } = require('../services/email');
+const { getUserRole, setUserRole } = require('../redis');
 const logger = require('../logger');
 
 const router = express.Router();
 
 const REFRESH_TOKEN_EXPIRES_DAYS = 7;
 const RESET_TOKEN_EXPIRES_MINUTES = parseInt(process.env.RESET_TOKEN_EXPIRES_MINUTES || '30', 10);
+
+router.post('/register', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email и пароль обязательны' });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ success: false, message: 'Пароль должен быть не менее 8 символов' });
+  }
+
+  try {
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ success: false, message: 'Пользователь с таким email уже существует' });
+    }
+
+    const hash = await bcrypt.hash(password, 12);
+    const result = await pool.query(
+      'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id, email, role',
+      [email, hash, 'viewer']
+    );
+    const newUser = result.rows[0];
+
+    await setUserRole(newUser.id, 'viewer');
+    logger.info('New user registered', { userId: newUser.id, email: newUser.email, role: 'viewer' });
+
+    res.status(201).json({
+      success: true,
+      message: 'Пользователь успешно зарегистрирован',
+      data: { id: newUser.id, email: newUser.email, role: 'viewer' },
+    });
+  } catch (err) {
+    logger.error('Registration error', { error: err.message });
+    res.status(500).json({ success: false, message: 'Внутренняя ошибка сервера' });
+  }
+});
 
 router.post('/login', loginRateLimiter, async (req, res) => {
   const { email, password } = req.body;
@@ -29,7 +69,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     if (locked) {
       return res.status(429).json({
         success: false,
-        message: `Аккаунт заблокирован из-за множества неудачных попыток. Попробуйте через 15 минут.`,
+        message: 'Аккаунт заблокирован из-за множества неудачных попыток. Попробуйте через 15 минут.',
       });
     }
 
@@ -50,7 +90,10 @@ router.post('/login', loginRateLimiter, async (req, res) => {
 
     await recordLoginAttempt(ip, email, true);
 
-    const accessToken = generateAccessToken(user);
+    const redisRole = await getUserRole(user.id);
+    const userRole = redisRole || user.role;
+
+    const accessToken = generateAccessToken({ ...user, role: userRole });
     const refreshToken = generateRefreshToken(user);
 
     const expiresAt = new Date();
@@ -61,14 +104,14 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       [user.id, refreshToken, expiresAt]
     );
 
-    logger.info('User logged in', { userId: user.id, email: user.email, role: user.role, ip });
+    logger.info('User logged in', { userId: user.id, email: user.email, role: userRole, ip });
 
     res.status(200).json({
       success: true,
       data: {
         accessToken,
         refreshToken,
-        user: { id: user.id, email: user.email, role: user.role },
+        user: { id: user.id, email: user.email, role: userRole },
       },
     });
   } catch (err) {
@@ -111,7 +154,10 @@ router.post('/refresh', async (req, res) => {
 
     await pool.query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
 
-    const newAccessToken = generateAccessToken(user);
+    const redisRole = await getUserRole(user.id);
+    const userRole = redisRole || user.role;
+
+    const newAccessToken = generateAccessToken({ ...user, role: userRole });
     const newRefreshToken = generateRefreshToken(user);
 
     const expiresAt = new Date();
@@ -180,27 +226,30 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    let token = null;
+
+    if (result.rows.length > 0) {
+      const user = result.rows[0];
+      token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRES_MINUTES * 60 * 1000);
+
+      await pool.query(
+        `INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)`,
+        [user.id, token, expiresAt]
+      );
+
+      await sendPasswordResetEmail(email, token);
+      logger.info('Password reset requested', { email });
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Если аккаунт существует, на него отправлено письмо с инструкциями.',
+      message: 'Если аккаунт существует, ссылка для восстановления отправлена.',
+      resetToken: token,
     });
-
-    if (result.rows.length === 0) return;
-
-    const user = result.rows[0];
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRES_MINUTES * 60 * 1000);
-
-    await pool.query(
-      `INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)`,
-      [user.id, token, expiresAt]
-    );
-
-    await sendPasswordResetEmail(email, token);
-    logger.info('Password reset requested', { email });
   } catch (err) {
     logger.error('Forgot-password error', { error: err.message });
+    res.status(500).json({ success: false, message: 'Ошибка при обработке запроса' });
   }
 });
 
@@ -240,11 +289,57 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-router.get('/me', authenticateToken, (req, res) => {
+router.get('/me', authenticateToken, async (req, res) => {
+  const role = await getUserRole(req.user.id);
   res.status(200).json({
     success: true,
-    data: { id: req.user.id, email: req.user.email, role: req.user.role },
+    data: { id: req.user.id, email: req.user.email, role: role || req.user.role },
   });
+});
+
+router.get('/users', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, role, is_active, created_at FROM users ORDER BY id ASC');
+    const usersWithRoles = await Promise.all(
+      result.rows.map(async (u) => {
+        const redisRole = await getUserRole(u.id);
+        return {
+          id: u.id,
+          email: u.email,
+          role: redisRole || u.role,
+          is_active: u.is_active,
+          created_at: u.created_at,
+        };
+      })
+    );
+    res.status(200).json({ success: true, data: usersWithRoles });
+  } catch (err) {
+    logger.error('Get users error', { error: err.message });
+    res.status(500).json({ success: false, message: 'Внутренняя ошибка сервера' });
+  }
+});
+
+router.put('/users/:id/role', authenticateToken, requireRole('admin'), async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  if (!role || !['admin', 'manager', 'viewer'].includes(role)) {
+    return res.status(400).json({ success: false, message: 'Некорректная роль' });
+  }
+
+  try {
+    const userRes = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Пользователь не найден' });
+    }
+
+    await setUserRole(parseInt(id, 10), role);
+    logger.info('User role updated in Redis', { targetUserId: id, newRole: role, updatedBy: req.user.id });
+    res.status(200).json({ success: true, message: 'Роль успешно обновлена в Redis' });
+  } catch (err) {
+    logger.error('Failed to update user role', { error: err.message });
+    res.status(500).json({ success: false, message: 'Внутренняя ошибка сервера' });
+  }
 });
 
 module.exports = router;
