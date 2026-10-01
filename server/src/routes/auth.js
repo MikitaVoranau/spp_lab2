@@ -244,8 +244,7 @@ router.post('/forgot-password', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Если аккаунт существует, ссылка для восстановления отправлена.',
-      resetToken: token,
+      message: 'Если аккаунт существует, письмо со ссылкой для сброса отправлено на вашу почту.',
     });
   } catch (err) {
     logger.error('Forgot-password error', { error: err.message });

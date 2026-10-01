@@ -14,14 +14,17 @@
   <div id="login-screen" class="overlay login-screen hidden">
     <div class="modal modal-small">
       <div class="modal-header">
-        <h2 id="login-modal-title">Авторизация</h2>
+        <h2 id="login-modal-title">Вход в систему</h2>
         <button type="button" id="btn-close-login" class="btn-close">✕</button>
       </div>
 
-      <div class="auth-tabs">
+      <div id="auth-tabs-bar" class="auth-tabs">
         <button type="button" id="tab-login" class="tab-btn active">Вход</button>
         <button type="button" id="tab-register" class="tab-btn">Регистрация</button>
-        <button type="button" id="tab-reset" class="tab-btn">Сброс пароля</button>
+      </div>
+
+      <div id="recovery-back-bar" class="hidden" style="margin-bottom:14px;">
+        <button type="button" id="btn-back-to-login-top" class="btn-link" style="font-size:0.875rem;">← Вернуться ко входу</button>
       </div>
 
       <form id="login-form" novalidate>
@@ -56,54 +59,68 @@
         </div>
       </form>
 
-      <form id="forgot-form" class="hidden" novalidate>
-        <p style="font-size:0.875rem;color:#6b7280;margin-bottom:12px;">
-          Введите ваш email. Если аккаунт существует, вам будет сформирован токен для сброса пароля:
-        </p>
-        <label for="forgot-email">Email</label>
-        <input type="email" id="forgot-email" placeholder="user@example.com" required />
+      <div id="forgot-form-container" class="hidden">
+        <div id="forgot-input-step">
+          <p style="font-size:0.875rem;color:#6b7280;margin-bottom:12px;">
+            Введите ваш email. Мы отправим письмо со ссылкой для восстановления пароля:
+          </p>
+          <form id="forgot-form" novalidate>
+            <label for="forgot-email">Email</label>
+            <input type="email" id="forgot-email" placeholder="user@example.com" required />
 
-        <div id="forgot-error" class="errors hidden"></div>
-        <div id="forgot-info" class="notification notif-success hidden" style="margin-bottom:12px;font-size:0.85rem;"></div>
+            <div id="forgot-error" class="errors hidden"></div>
 
-        <div class="form-buttons">
-          <button type="submit" class="btn btn-primary" style="width:100%">Запросить сброс пароля</button>
+            <div class="form-buttons" style="margin-top:12px;">
+              <button type="submit" id="btn-submit-forgot" class="btn btn-primary" style="width:100%">Отправить письмо со ссылкой</button>
+            </div>
+          </form>
+
+          <div style="display:flex;justify-content:center;margin-top:14px;">
+            <button type="button" id="btn-show-enter-token" class="btn-link">У меня уже есть токен из письма</button>
+          </div>
         </div>
 
-        <div style="display:flex;justify-content:space-between;margin-top:14px;">
-          <button type="button" id="btn-show-enter-token" class="btn-link">У меня уже есть токен</button>
-          <button type="button" id="btn-forgot-to-login" class="btn-link">Назад ко входу</button>
+        <div id="forgot-success-card" class="hidden" style="text-align:center;padding:16px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+          <div style="font-size:2.2rem;margin-bottom:6px;">📬</div>
+          <h3 style="margin:0 0 6px;color:#166534;font-size:1.05rem;">Письмо отправлено!</h3>
+          <p id="forgot-success-text" style="font-size:0.875rem;color:#15803d;margin:0 0 14px;line-height:1.4;">
+            Мы отправили ссылку для смены пароля на указанный email.
+          </p>
+          <a href="http://localhost:8025" target="_blank" class="btn btn-primary" style="display:inline-block;padding:9px 18px;text-decoration:none;font-weight:bold;margin-bottom:12px;">
+            Открыть почту Mailpit →
+          </a>
+          <p style="font-size:0.8rem;color:#6b7280;margin:0 0 8px;">
+            Перейдите по ссылке в письме для автоматической установки пароля.
+          </p>
+          <button type="button" id="btn-card-enter-token" class="btn-link">Или ввести токен вручную</button>
         </div>
-      </form>
+      </div>
 
       <form id="reset-password-form" class="hidden" novalidate>
-        <p style="font-size:0.875rem;color:#6b7280;margin-bottom:12px;">
-          Введите токен сброса и укажите новый пароль (не менее 8 символов):
-        </p>
-        <label for="reset-token-input">Токен сброса</label>
-        <input type="text" id="reset-token-input" placeholder="Вставьте токен" required />
+        <div id="reset-badge-url" class="hidden" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;margin-bottom:14px;color:#1e40af;font-size:0.85rem;display:flex;align-items:center;gap:6px;">
+          <span>✓</span> <strong>Токен подтверждён из ссылки в письме</strong>
+        </div>
 
-        <label for="reset-new-password">Новый пароль</label>
-        <input type="password" id="reset-new-password" placeholder="Новый пароль" minlength="8" required />
+        <div id="reset-token-group">
+          <label for="reset-token-input">Токен из письма</label>
+          <input type="text" id="reset-token-input" placeholder="Вставьте токен" required />
+        </div>
+
+        <label for="reset-new-password">Новый пароль (мин. 8 символов)</label>
+        <input type="password" id="reset-new-password" placeholder="Придумайте новый пароль" minlength="8" required />
 
         <div id="reset-error" class="errors hidden"></div>
         <div id="reset-info" class="notification notif-success hidden" style="margin-bottom:12px;font-size:0.85rem;"></div>
 
         <div class="form-buttons">
-          <button type="submit" class="btn btn-primary" style="width:100%">Сохранить новый пароль</button>
+          <button type="submit" id="btn-submit-new-password" class="btn btn-primary" style="width:100%">Сохранить новый пароль</button>
         </div>
 
         <div style="display:flex;justify-content:space-between;margin-top:14px;">
-          <button type="button" id="btn-back-to-forgot" class="btn-link">Запросить токен снова</button>
+          <button type="button" id="btn-back-to-forgot" class="btn-link">Запросить письмо снова</button>
           <button type="button" id="btn-reset-to-login" class="btn-link">Назад ко входу</button>
         </div>
       </form>
-
-      <p class="login-hint">
-        Admin: admin@example.com / Admin1234!<br />
-        Manager: manager@example.com / Manager123!<br />
-        Viewer: viewer@example.com / Viewer1234!
-      </p>
     </div>
   </div>
 

@@ -34,6 +34,14 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: producthub-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
   server:
     build:
       context: ./server
@@ -51,10 +59,10 @@ services:
       JWT_SECRET: super_secret_jwt_key_change_in_production_32chars
       JWT_ACCESS_EXPIRES: 15m
       JWT_REFRESH_EXPIRES: 7d
-      SMTP_HOST: smtp.gmail.com
-      SMTP_PORT: 587
-      SMTP_USER: your_email@gmail.com
-      SMTP_PASS: your_app_password
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASS: ""
       SMTP_FROM: no-reply@producthub.local
       RESET_TOKEN_EXPIRES_MINUTES: 30
       LOG_LEVEL: info
@@ -68,6 +76,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   client:
     build:

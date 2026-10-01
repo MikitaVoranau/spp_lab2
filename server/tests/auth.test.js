@@ -236,7 +236,7 @@ describe('POST /api/auth/forgot-password', () => {
     expect(res.body.success).toBe(false);
   });
 
-  test('should return 200 with resetToken for existing user', async () => {
+  test('should return 200 for existing user', async () => {
     pool.query.mockResolvedValueOnce({ rows: [{ id: 1, email: 'user@t.com' }] });
     pool.query.mockResolvedValueOnce({ rows: [] });
 
@@ -246,7 +246,6 @@ describe('POST /api/auth/forgot-password', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.resetToken).toBeDefined();
   });
 });
 

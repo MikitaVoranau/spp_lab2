@@ -102,32 +102,47 @@ const $ = (id) => document.getElementById(id);
 
 const els = {
   loginScreen: $('login-screen'),
+  loginModalTitle: $('login-modal-title'),
   btnCloseLogin: $('btn-close-login'),
+  authTabsBar: $('auth-tabs-bar'),
   tabLogin: $('tab-login'),
   tabRegister: $('tab-register'),
-  tabReset: $('tab-reset'),
-  linkForgotPassword: $('link-forgot-password'),
+  recoveryBackBar: $('recovery-back-bar'),
+  btnBackToLoginTop: $('btn-back-to-login-top'),
+
   loginForm: $('login-form'),
   loginEmail: $('login-email'),
   loginPassword: $('login-password'),
   loginError: $('login-error'),
+  linkForgotPassword: $('link-forgot-password'),
+
   registerForm: $('register-form'),
   registerEmail: $('register-email'),
   registerPassword: $('register-password'),
   registerError: $('register-error'),
+
+  forgotFormContainer: $('forgot-form-container'),
+  forgotInputStep: $('forgot-input-step'),
   forgotForm: $('forgot-form'),
   forgotEmail: $('forgot-email'),
   forgotError: $('forgot-error'),
-  forgotInfo: $('forgot-info'),
+  btnSubmitForgot: $('btn-submit-forgot'),
   btnShowEnterToken: $('btn-show-enter-token'),
-  btnForgotToLogin: $('btn-forgot-to-login'),
+  forgotSuccessCard: $('forgot-success-card'),
+  forgotSuccessText: $('forgot-success-text'),
+  btnCardEnterToken: $('btn-card-enter-token'),
+
   resetPasswordForm: $('reset-password-form'),
+  resetBadgeUrl: $('reset-badge-url'),
+  resetTokenGroup: $('reset-token-group'),
   resetTokenInput: $('reset-token-input'),
   resetNewPassword: $('reset-new-password'),
   resetError: $('reset-error'),
   resetInfo: $('reset-info'),
+  btnSubmitNewPassword: $('btn-submit-new-password'),
   btnBackToForgot: $('btn-back-to-forgot'),
   btnResetToLogin: $('btn-reset-to-login'),
+
 
 
   mainApp: $('main-app'),
@@ -200,18 +215,59 @@ function openLoginModal(tab = 'login') {
   els.loginError.classList.add('hidden');
   els.registerError.classList.add('hidden');
   els.forgotError.classList.add('hidden');
-  els.forgotInfo.classList.add('hidden');
   els.resetError.classList.add('hidden');
   els.resetInfo.classList.add('hidden');
 
-  els.tabLogin.classList.toggle('active', tab === 'login');
-  els.tabRegister.classList.toggle('active', tab === 'register');
-  els.tabReset.classList.toggle('active', tab === 'forgot' || tab === 'reset');
+  if (tab === 'login') {
+    els.loginModalTitle.textContent = 'Вход в систему';
+    els.authTabsBar.classList.remove('hidden');
+    els.recoveryBackBar.classList.add('hidden');
+    els.tabLogin.classList.add('active');
+    els.tabRegister.classList.remove('active');
+    els.loginForm.classList.remove('hidden');
+    els.registerForm.classList.add('hidden');
+    els.forgotFormContainer.classList.add('hidden');
+    els.resetPasswordForm.classList.add('hidden');
+  } else if (tab === 'register') {
+    els.loginModalTitle.textContent = 'Регистрация';
+    els.authTabsBar.classList.remove('hidden');
+    els.recoveryBackBar.classList.add('hidden');
+    els.tabRegister.classList.add('active');
+    els.tabLogin.classList.remove('active');
+    els.registerForm.classList.remove('hidden');
+    els.loginForm.classList.add('hidden');
+    els.forgotFormContainer.classList.add('hidden');
+    els.resetPasswordForm.classList.add('hidden');
+  } else if (tab === 'forgot') {
+    els.loginModalTitle.textContent = 'Восстановление пароля';
+    els.authTabsBar.classList.add('hidden');
+    els.recoveryBackBar.classList.remove('hidden');
+    els.forgotFormContainer.classList.remove('hidden');
+    els.forgotInputStep.classList.remove('hidden');
+    els.forgotSuccessCard.classList.add('hidden');
+    els.loginForm.classList.add('hidden');
+    els.registerForm.classList.add('hidden');
+    els.resetPasswordForm.classList.add('hidden');
+    setTimeout(() => els.forgotEmail.focus(), 50);
+  } else if (tab === 'reset') {
+    els.loginModalTitle.textContent = 'Новый пароль';
+    els.authTabsBar.classList.add('hidden');
+    els.recoveryBackBar.classList.remove('hidden');
+    els.resetPasswordForm.classList.remove('hidden');
+    els.forgotFormContainer.classList.add('hidden');
+    els.loginForm.classList.add('hidden');
+    els.registerForm.classList.add('hidden');
 
-  els.loginForm.classList.toggle('hidden', tab !== 'login');
-  els.registerForm.classList.toggle('hidden', tab !== 'register');
-  els.forgotForm.classList.toggle('hidden', tab !== 'forgot');
-  els.resetPasswordForm.classList.toggle('hidden', tab !== 'reset');
+    if (els.resetTokenInput.value.trim()) {
+      els.resetBadgeUrl.classList.remove('hidden');
+      els.resetTokenGroup.classList.add('hidden');
+      setTimeout(() => els.resetNewPassword.focus(), 50);
+    } else {
+      els.resetBadgeUrl.classList.add('hidden');
+      els.resetTokenGroup.classList.remove('hidden');
+      setTimeout(() => els.resetTokenInput.focus(), 50);
+    }
+  }
 }
 
 function closeLoginModal() {
@@ -219,7 +275,6 @@ function closeLoginModal() {
   els.loginError.classList.add('hidden');
   els.registerError.classList.add('hidden');
   els.forgotError.classList.add('hidden');
-  els.forgotInfo.classList.add('hidden');
   els.resetError.classList.add('hidden');
   els.resetInfo.classList.add('hidden');
 }
@@ -234,24 +289,26 @@ els.loginScreen.addEventListener('click', (e) => {
 
 els.tabLogin.addEventListener('click', () => openLoginModal('login'));
 els.tabRegister.addEventListener('click', () => openLoginModal('register'));
-els.tabReset.addEventListener('click', () => openLoginModal('forgot'));
 els.linkForgotPassword.addEventListener('click', () => openLoginModal('forgot'));
-els.btnForgotToLogin.addEventListener('click', () => openLoginModal('login'));
-els.btnResetToLogin.addEventListener('click', () => openLoginModal('login'));
+els.btnBackToLoginTop.addEventListener('click', () => openLoginModal('login'));
 els.btnShowEnterToken.addEventListener('click', () => openLoginModal('reset'));
+els.btnCardEnterToken.addEventListener('click', () => openLoginModal('reset'));
 els.btnBackToForgot.addEventListener('click', () => openLoginModal('forgot'));
+els.btnResetToLogin.addEventListener('click', () => openLoginModal('login'));
 
 els.forgotForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   els.forgotError.classList.add('hidden');
-  els.forgotInfo.classList.add('hidden');
 
   const email = els.forgotEmail.value.trim();
   if (!email) {
-    els.forgotError.textContent = 'Введите email';
+    els.forgotError.textContent = 'Введите ваш email';
     els.forgotError.classList.remove('hidden');
     return;
   }
+
+  els.btnSubmitForgot.disabled = true;
+  els.btnSubmitForgot.textContent = 'Отправка...';
 
   try {
     const res = await fetch(`${API_BASE}/auth/forgot-password`, {
@@ -262,17 +319,9 @@ els.forgotForm.addEventListener('submit', async (e) => {
     const json = await res.json();
 
     if (json.success) {
-      if (json.resetToken) {
-        els.resetTokenInput.value = json.resetToken;
-        els.forgotInfo.innerHTML = `${json.message}<br /><strong style="display:block;margin-top:6px;">Токен сброса:</strong> <code style="word-break:break-all;display:block;margin-top:4px;user-select:all;">${json.resetToken}</code><br /><button type="button" id="btn-quick-fill-reset" class="btn-link" style="margin-top:6px;display:inline-block;">Перейти к форме с новым паролем →</button>`;
-        const quickBtn = document.getElementById('btn-quick-fill-reset');
-        if (quickBtn) {
-          quickBtn.addEventListener('click', () => openLoginModal('reset'));
-        }
-      } else {
-        els.forgotInfo.textContent = json.message;
-      }
-      els.forgotInfo.classList.remove('hidden');
+      els.forgotSuccessText.innerHTML = `Мы отправили письмо со ссылкой для сброса на <strong>${email}</strong>.<br />Проверьте почтовый ящик Mailpit:`;
+      els.forgotInputStep.classList.add('hidden');
+      els.forgotSuccessCard.classList.remove('hidden');
     } else {
       els.forgotError.textContent = json.message || 'Ошибка запроса сброса';
       els.forgotError.classList.remove('hidden');
@@ -280,6 +329,9 @@ els.forgotForm.addEventListener('submit', async (e) => {
   } catch (err) {
     els.forgotError.textContent = 'Ошибка сети: ' + err.message;
     els.forgotError.classList.remove('hidden');
+  } finally {
+    els.btnSubmitForgot.disabled = false;
+    els.btnSubmitForgot.textContent = 'Отправить письмо со ссылкой';
   }
 });
 
@@ -303,6 +355,9 @@ els.resetPasswordForm.addEventListener('submit', async (e) => {
     return;
   }
 
+  els.btnSubmitNewPassword.disabled = true;
+  els.btnSubmitNewPassword.textContent = 'Сохранение...';
+
   try {
     const res = await fetch(`${API_BASE}/auth/reset-password`, {
       method: 'POST',
@@ -312,11 +367,11 @@ els.resetPasswordForm.addEventListener('submit', async (e) => {
     const json = await res.json();
 
     if (json.success) {
-      els.resetInfo.textContent = json.message || 'Пароль успешно изменён! Вы можете войти.';
+      els.resetInfo.textContent = 'Пароль успешно изменён! Выполняем переход ко входу...';
       els.resetInfo.classList.remove('hidden');
       setTimeout(() => {
         openLoginModal('login');
-      }, 1500);
+      }, 1200);
     } else {
       els.resetError.textContent = json.message || 'Ошибка сброса пароля';
       els.resetError.classList.remove('hidden');
@@ -324,6 +379,9 @@ els.resetPasswordForm.addEventListener('submit', async (e) => {
   } catch (err) {
     els.resetError.textContent = 'Ошибка сети: ' + err.message;
     els.resetError.classList.remove('hidden');
+  } finally {
+    els.btnSubmitNewPassword.disabled = false;
+    els.btnSubmitNewPassword.textContent = 'Сохранить новый пароль';
   }
 });
 

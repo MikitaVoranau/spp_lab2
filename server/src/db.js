@@ -67,26 +67,15 @@ async function initDB() {
   `);
 
   const bcrypt = require('bcryptjs');
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', ['admin@example.com']);
-  if (existing.rows.length === 0) {
-    const hash = await bcrypt.hash('Admin1234!', 12);
-    await pool.query(
-      `INSERT INTO users (email, password_hash, role) VALUES ($1, $2, 'admin')`,
-      ['admin@example.com', hash]
-    );
-
-    const managerHash = await bcrypt.hash('Manager123!', 12);
-    await pool.query(
-      `INSERT INTO users (email, password_hash, role) VALUES ($1, $2, 'manager')`,
-      ['manager@example.com', managerHash]
-    );
-
-    const viewerHash = await bcrypt.hash('Viewer1234!', 12);
-    await pool.query(
-      `INSERT INTO users (email, password_hash, role) VALUES ($1, $2, 'viewer')`,
-      ['viewer@example.com', viewerHash]
-    );
-  }
+  const defaultPasswordHash = await bcrypt.hash('123456789', 12);
+  await pool.query(
+    `INSERT INTO users (email, password_hash, role) VALUES
+       ('admin@example.com', $1, 'admin'),
+       ('manager@example.com', $1, 'manager'),
+       ('viewer@example.com', $1, 'viewer')
+     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
+    [defaultPasswordHash]
+  );
 
   const logger = require('./logger');
   logger.info('Database tables are ready');
